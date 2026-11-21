@@ -1,2 +1,2 @@
 # tvc-pid-vs-lqr
-Thrust vectoring project
+Simulating gimbaled rocket attitude control in Python: PID vs LQR

@@ -30,6 +30,19 @@ result = solve_ivp(rocket, [0, 2.0], start, max_step=0.001)
 theta = result.y[0]
 omega = result.y[1]
 delta = engine_tilt(theta, omega)
+# Measure how good the controller is
+start_tilt = theta[0]
+overshoot = max(0.0, -np.min(theta)) / start_tilt * 100
+outside = np.where(np.abs(theta) > 0.02 * start_tilt)[0]
+if abs(theta[-1]) > 0.02 * start_tilt:
+    settling = "did not settle"
+else:
+    settling = f"{result.t[outside[-1]]:.2f} s" if len(outside) else "0.00 s"
+peak_engine = np.max(np.abs(np.rad2deg(delta)))
+
+print(f"Overshoot:         {overshoot:.1f} %")
+print(f"Settling time:     {settling}")
+print(f"Peak engine angle: {peak_engine:.2f} deg")
 
 # Two graphs, one above the other
 fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)

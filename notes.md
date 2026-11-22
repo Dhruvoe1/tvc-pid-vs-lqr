@@ -10,3 +10,13 @@ It needs to know how far the rocket is tilted (the angle error), so it can push 
 
 ## 4. Torque 
 Torque = force x distance from the pivot. For the rocket, torque = T x L x sin(delta), where T is thrust, L is the distance from the centre of mass to the nozzle, and delta is the gimbal angle. Doubling the thrsut doubles the torque, a longer L gives more torque, and a bigger delta gives more torque (for small angles). 
+
+## 5. Controller tuning results (Kp = 1.0)
+
+| Kd | Overshoot | Settling time | Peak engine angle |
+|---|---|---|---|
+| 0.05 | 40.7 % | 1.59 s | 1.00 deg |
+| 0.13 | 4.0 % | 0.68 s | 1.00 deg |
+| 0.30 | 0.0 % | 1.37 s | 1.00 deg |
+
+Too little damping (Kd = 0.05) makes the rocket wobble. Too much (Kd = 0.30) removes overshoot but makes it slow to settle. Kd = 0.13 gives a damping ratio of about 0.7 and the fastest settling. The simulated overshoot values match the values predicted by theory.

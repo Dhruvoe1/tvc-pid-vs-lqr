@@ -30,3 +30,27 @@ Too little damping (Kd = 0.05) makes the rocket wobble. Too much (Kd = 0.30) rem
 | Q = diag(1000, 1), R = 1 | 31.83 | 1.29 | 0.0 % | 0.15 s | 5.00 deg (saturated) |
 
 A larger R makes LQR use the engine more gently. A very large Q asks for roughly 32 degrees of engine tilt per degree of rocket tilt, which hits the 5 degree gimbal limit (saturation), but gives the fastest recovery. The Q = 10 baseline is overdamped, so it is slower than the hand-tuned PD controller (0.68 s) even though it uses more engine movement. To compare PD and LQR fairly, both should be tuned to the same peak engine angle.
+
+## 7. Servo lag results
+
+| Servo lag | PD | LQR Q=(10,1) | LQR matched |
+|---|---|---|---|
+| 0 ms | 4.0 % overshoot, 0.68 s | 0.0 %, 1.25 s | 0.0 %, 0.63 s |
+| 50 ms | 16.7 %, 0.81 s | 0.0 %, 1.24 s | 0.0 %, 0.68 s |
+| 100 ms | 48.2 %, no settle in 3 s | 0.0 %, 1.21 s | 17.0 %, 1.63 s |
+| 150 ms | 186 %, unstable (growing) | 0.3 %, 1.36 s | 41.7 %, no settle |
+
+PD, tuned for speed, is the most sensitive to servo lag and becomes unstable at 150 ms. The heavily damped LQR is barely affected.
+
+## 8. Gyro noise results
+
+Engine jitter in degrees (standard deviation, average of 10 runs) after the rocket has settled.
+
+| Gyro noise | PD | LQR Q=(10,1) | LQR matched |
+|---|---|---|---|
+| 0 deg/s | 0.00 | 0.00 | 0.00 |
+| 1 deg/s | 0.13 | 1.09 | 0.18 |
+| 5 deg/s | 0.66 | 3.71 | 0.89 |
+| 10 deg/s | 1.32 | 4.35 | 1.77 |
+
+The ranking is the reverse of the servo lag result. The heavily damped LQR has a gain on tilt speed (K2 about 1.03) roughly 8 times larger than PD (Kd = 0.13), so it amplifies gyro noise about 8 times more. At 5 deg/s its engine command repeatedly hits the 5 degree gimbal limit. The same large gain that protects against servo lag makes it vulnerable to sensor noise: no controller wins both tests.

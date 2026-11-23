@@ -20,3 +20,13 @@ Torque = force x distance from the pivot. For the rocket, torque = T x L x sin(d
 | 0.30 | 0.0 % | 1.37 s | 1.00 deg |
 
 Too little damping (Kd = 0.05) makes the rocket wobble. Too much (Kd = 0.30) removes overshoot but makes it slow to settle. Kd = 0.13 gives a damping ratio of about 0.7 and the fastest settling. The simulated overshoot values match the values predicted by theory.
+
+## 6. LQR results
+
+| Setting | K1 | K2 | Overshoot | Settling time | Peak engine angle |
+|---|---|---|---|---|---|
+| Q = diag(10, 1), R = 1 | 3.38 | 1.03 | 0.0 % | 1.25 s | 3.38 deg |
+| Q = diag(10, 1), R = 10 | 1.23 | 0.354 | 0.0 % | 1.26 s | 1.23 deg |
+| Q = diag(1000, 1), R = 1 | 31.83 | 1.29 | 0.0 % | 0.15 s | 5.00 deg (saturated) |
+
+A larger R makes LQR use the engine more gently. A very large Q asks for roughly 32 degrees of engine tilt per degree of rocket tilt, which hits the 5 degree gimbal limit (saturation), but gives the fastest recovery. The Q = 10 baseline is overdamped, so it is slower than the hand-tuned PD controller (0.68 s) even though it uses more engine movement. To compare PD and LQR fairly, both should be tuned to the same peak engine angle.

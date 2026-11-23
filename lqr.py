@@ -12,7 +12,7 @@ mu_a = 20.0
 delta_max = np.deg2rad(5)
 
 # LQR settings: change these and re-run
-Q = np.diag([1000.0, 1.0])   # cost of tilt angle and tilt speed
+Q = np.diag([10.0, 1.0])   # cost of tilt angle and tilt speed
 R = np.array([[1.0]])      # cost of using the engine
 
 # Let the maths find the best gains

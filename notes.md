@@ -54,3 +54,18 @@ Engine jitter in degrees (standard deviation, average of 10 runs) after the rock
 | 10 deg/s | 1.32 | 4.35 | 1.77 |
 
 The ranking is the reverse of the servo lag result. The heavily damped LQR has a gain on tilt speed (K2 about 1.03) roughly 8 times larger than PD (Kd = 0.13), so it amplifies gyro noise about 8 times more. At 5 deg/s its engine command repeatedly hits the 5 degree gimbal limit. The same large gain that protects against servo lag makes it vulnerable to sensor noise: no controller wins both tests.
+
+## 9. Gyro filter results
+
+A first-order low-pass filter on the gyro reading (5 deg/s noise, jitter = engine standard deviation in degrees).
+
+| Servo lag | Filter | PD jitter | LQR Q=(10,1) jitter | LQR matched jitter |
+|---|---|---|---|---|
+| 0 ms | none | 0.66 | 3.71 | 0.89 |
+| 0 ms | 10 ms | 0.22 | 1.75 | 0.30 |
+| 0 ms | 20 ms | 0.16 | 1.23 | 0.21 |
+| 30 ms | none | 0.14 | 0.69 | 0.17 |
+| 30 ms | 10 ms | 0.13 | 1.39 | 0.16 |
+| 30 ms | 20 ms | 0.13 | 2.64 (sustained wobble) | 0.16 |
+
+With a perfect servo, the filter cuts jitter a lot. With a 30 ms servo, the servo already smooths the engine motion, so the filter adds little and costs extra lag. For the heavily damped LQR, a 20 ms filter plus a 30 ms servo gives a sustained limit-cycle oscillation: the tilt stays within about 0.2 degrees, but the engine swings by almost 4 degrees to hold it, because the command saturates at the 5 degree limit. Lag from the servo and from the filter add together, and high-gain controllers have the least margin for it.

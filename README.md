@@ -81,3 +81,119 @@ Add wind gusts and centre-of-mass shifts, add an integral term for a full PID, u
 
 - Comparison of LQR, LQG and PID control for a finless rocket, *Machines* 11(3), 394 (2023): https://mdpi.com/2075-1702/11/3/394
 - Sutton and Biblarz, *Rocket Propulsion Elements*, thrust vector control chapter.
+
+
+
+
+
+
+# Keeping a rocket upright: a simulation project
+
+A first-year aerospace engineering student project (November 2026). I built a computer model of a small rocket with no fins, taught it to steer itself using two different automatic controllers, and then tested what happens when the equipment isn't perfect.
+
+![The same rocket, three controllers, with a slow motor](servo_lag.png)
+
+*The graph shows how far a rocket is tilted over time after being knocked 1 degree off vertical. Each coloured line is a different controller. The closer a line gets to zero, the better the rocket has recovered. Here the engine's motor is slow (100 milliseconds). Blue: PD. Orange: LQR with heavy damping. Green: LQR matched to PD.*
+
+## The result in one sentence
+
+No controller won every test: the one that coped best with a slow motor coped worst with a noisy sensor, and the other way round.
+
+## The problem
+![Why a rocket with no fins tips over](diagram_stability.png)
+
+A rocket with no fins is like a broom balanced upright on your hand. If it tilts even a little, the air pushes the nose over further, so the tilt grows faster and faster until it falls. Fins fix this on arrows and many small rockets, but plenty of rockets have none, and instead steer by tilting the engine.
+
+## The idea
+![How tilting the engine steers the rocket](diagram_engine_tilt.png)
+
+The engine sits at the bottom of the rocket, far from its balance point. If the engine tilts a few degrees, its push goes slightly sideways and twists the whole rocket, like pushing the bottom of a standing broom. A pivoting engine mount like this is called a **gimbal** (think of a camera gimbal that tilts to keep a phone steady). Steering a vehicle by changing the direction of its engine push is called **thrust vector control**.
+
+A computer has to decide how much to tilt the engine, thousands of times a second. That decision-maker is called a **controller**.
+
+## What I built
+![The feedback loop](diagram_feedback_loop.png)
+
+A **simulation**: a Python program that follows the rocket in tiny steps of time and calculates how its tilt changes. I did not build a real rocket. I wrote two controllers:
+
+- **PD controller.** A simple rule that looks at two things: how far the rocket is tilted, and how fast it is tilting. It then tilts the engine the opposite way. PD stands for *proportional-derivative*: proportional means reacting in proportion to how far off the rocket is, and derivative means reacting to how fast things are changing.
+- **LQR controller.** You tell it what you care about (staying upright, not using too much engine movement) and a maths method works out the best settings automatically. LQR stands for *Linear Quadratic Regulator*.
+
+To compare them fairly, I tuned one LQR to use the same amount of engine movement as PD.
+
+## What I tested
+
+Real equipment is never perfect, so I added three imperfections:
+
+1. **A slow motor.** The motor that tilts the engine (a *servo*) can't move instantly. I tested delays from 0 to 150 milliseconds.
+2. **A noisy sensor.** The sensor that measures how fast the rocket is rotating (a *gyroscope*) gives readings that jitter randomly. I tested jitter of 1, 5 and 10 degrees per second.
+3. **A filter.** A *filter* smooths out jittery readings, but it also makes the controller react a moment late.
+
+## What I found
+![No controller wins both tests](diagram_tradeoff.png)
+
+| Test | PD | LQR, heavy damping | LQR, matched to PD |
+|---|---|---|---|
+| Perfect conditions: swing past upright, time to settle | 4 %, 0.68 s | 0 %, 1.25 s | 0 %, 0.63 s |
+| Motor delay of 100 ms: swing past upright | 48 %, still wobbling after 3 s | 0 %, settles in 1.21 s | 17 %, settles in 1.63 s |
+| Motor delay of 150 ms: swing past upright | 186 %, getting worse | 0.3 %, settles in 1.36 s | 42 %, still wobbling |
+| Engine twitching with 5 deg/s sensor jitter (degrees) | 0.66 | 3.71 | 0.89 |
+
+1. **With equal engine effort, the two controllers were almost equally good** in perfect conditions (0.68 s against 0.63 s to settle).
+2. **A faster controller can be more fragile.** PD was quickest, but a slow motor made it wobble badly and eventually lose control.
+3. **The ranking flipped for sensor jitter.** The heavily damped LQR reacts strongly to the rotation sensor, so it also amplifies that sensor's jitter about 8 times more than PD. Its engine kept slamming into its 5 degree limit, which would wear out a real motor.
+4. **A filter is not free.** With a perfect motor it cut the engine twitching a lot. With a slightly slow motor already in the loop, it added almost nothing for PD and pushed the heavy LQR into a steady wobble. Delays from different parts add up, and some controllers can't afford them.
+
+## How the model works
+
+The model tracks two things: the tilt angle, and how fast the tilt is changing. Two pushes act on the rocket:
+
+> change in tilt speed = (engine push) + (air push)
+
+The engine push comes from tilting the engine, and is stronger with more thrust, a longer distance from the balance point, and a lighter rocket. The air push always tries to tip the nose further over, and grows with the tilt. All the numbers (30 newtons of thrust, a 0.4 metre lever arm, and so on) describe a small hobby-sized rocket and are illustrative, not measured. The engine can tilt at most 5 degrees.
+
+## Limitations
+
+- It is a simplified model: only one tilt angle, no wind, no changing weight.
+- The air push is kept constant, although in reality it gets stronger as a rocket speeds up.
+- Only the rotation sensor is noisy. The tilt angle itself is assumed to be measured perfectly.
+- I used PD rather than PID, because this model has no steady drift for the extra I term to fix.
+- Nothing has been tested on real hardware.
+
+## Run it yourself
+
+Install Python 3.11 or newer, then in a terminal:
+
+    python -m pip install numpy scipy matplotlib
+    python compare.py
+
+| File | What it does |
+|---|---|
+| `open_loop.py` | The rocket with no control, tipping over |
+| `closed_loop.py` | PD controller with performance measurements |
+| `lqr.py` | LQR controller with adjustable priorities |
+| `compare.py` | PD and two LQR versions on one graph |
+| `servo_lag.py` | The slow motor experiment |
+| `gyro_noise.py` | The noisy sensor experiment |
+| `gyro_filter.py` | The filter experiment (takes about 30 seconds to run) |
+| `notes.md` | My working notes and full tables of results |
+
+## Mini glossary
+
+- **Simulation:** a computer model that imitates how something behaves.
+- **Controller:** the rule or program that decides what the actuator should do.
+- **Servo:** a small motor that moves to a requested angle.
+- **Gyroscope:** a sensor that measures how fast something is rotating.
+- **Overshoot:** how far the rocket swings past upright, as a percentage of its starting tilt.
+- **Settling time:** how long until the tilt stays within 2 % of zero.
+- **Damping:** resistance to wobbling. Too little and it wobbles, too much and it is sluggish.
+- **Saturation:** being cut off at a physical limit, such as the 5 degree engine tilt.
+
+## Where it could go next
+
+Add wind gusts and shifting balance points, an integral term for a full PID controller, a model that works at large tilt angles, many random trials to measure how often each controller fails, and a 3D-printed gimbal to test on real hardware.
+
+## Credits
+
+- Comparison of LQR, LQG and PID control for a finless rocket, *Machines* 11(3), 394 (2023): https://mdpi.com/2075-1702/11/3/394
+- Sutton and Biblarz, *Rocket Propulsion Elements*, thrust vector control chapter.

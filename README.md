@@ -72,6 +72,7 @@ Install Python 3.11 or newer, then:
 | `gyro_noise.py` | Gyro noise experiment |
 | `gyro_filter.py` | Gyro filter experiment (takes about 30 seconds) |
 | `notes.md` | Working notes and full result tables |
+| wind_pid.py | Wind and PID experiment |
 
 ## Next steps
 
@@ -143,6 +144,7 @@ Real equipment is never perfect, so I added three imperfections:
 2. **A faster controller can be more fragile.** PD was quickest, but a slow motor made it wobble badly and eventually lose control.
 3. **The ranking flipped for sensor jitter.** The heavily damped LQR reacts strongly to the rotation sensor, so it also amplifies that sensor's jitter about 8 times more than PD. Its engine kept slamming into its 5 degree limit, which would wear out a real motor.
 4. **A filter is not free.** With a perfect motor it cut the engine twitching a lot. With a slightly slow motor already in the loop, it added almost nothing for PD and pushed the heavy LQR into a steady wobble. Delays from different parts add up, and some controllers can't afford them.
+5. **A steady wind needs memory.** In a constant crosswind, PD and LQR both lean over by about 2.3 degrees and stay there. Adding an integral term (the I in PID, a running total of how tilted the rocket has been) removes the lean completely, but it overshoots more (from 4 % to 23-50 % from a 1 degree start) and is slower to recover from a short gust.
 
 ## How the model works
 
@@ -157,7 +159,7 @@ The engine push comes from tilting the engine, and is stronger with more thrust,
 - It is a simplified model: only one tilt angle, no wind, no changing weight.
 - The air push is kept constant, although in reality it gets stronger as a rocket speeds up.
 - Only the rotation sensor is noisy. The tilt angle itself is assumed to be measured perfectly.
-- I used PD rather than PID, because this model has no steady drift for the extra I term to fix.
+- Wind is modelled only as a simple constant push or a short shove, and the PID gains were chosen to show the trend, not optimsed 
 - Nothing has been tested on real hardware.
 
 ## Run it yourself
@@ -177,6 +179,7 @@ Install Python 3.11 or newer, then in a terminal:
 | `gyro_noise.py` | The noisy sensor experiment |
 | `gyro_filter.py` | The filter experiment (takes about 30 seconds to run) |
 | `notes.md` | My working notes and full tables of results |
+| wind_pid.py | Wind and PID experiment |
 
 ## Mini glossary
 
@@ -191,7 +194,7 @@ Install Python 3.11 or newer, then in a terminal:
 
 ## Where it could go next
 
-Add wind gusts and shifting balance points, an integral term for a full PID controller, a model that works at large tilt angles, many random trials to measure how often each controller fails, and a 3D-printed gimbal to test on real hardware.
+Add wind gusts and shifting balance points, a model that works at large tilt angles, many random trials to measure how often each controller fails, and a 3D-printed gimbal to test on real hardware.
 
 ## Credits
 

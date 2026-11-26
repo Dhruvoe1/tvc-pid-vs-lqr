@@ -69,3 +69,20 @@ A first-order low-pass filter on the gyro reading (5 deg/s noise, jitter = engin
 | 30 ms | 20 ms | 0.13 | 2.64 (sustained wobble) | 0.16 |
 
 With a perfect servo, the filter cuts jitter a lot. With a 30 ms servo, the servo already smooths the engine motion, so the filter adds little and costs extra lag. For the heavily damped LQR, a 20 ms filter plus a 30 ms servo gives a sustained limit-cycle oscillation: the tilt stays within about 0.2 degrees, but the engine swings by almost 4 degrees to hold it, because the command saturates at the 5 degree limit. Lag from the servo and from the filter add together, and high-gain controllers have the least margin for it.
+
+## 10. Wind and PID
+
+Steady crosswind (3 per s^2 from t = 1 s, rocket starts upright):
+
+| Controller | Peak tilt | Final lean | Back within 0.1 deg |
+|---|---|---|---|
+| PD | 2.35 deg | 2.262 deg | never |
+| LQR matched | 2.27 deg | 2.268 deg | never |
+| PID Ki=1 | 2.05 deg | 0.000 deg | 2.23 s |
+| PID Ki=3 | 1.76 deg | 0.000 deg | 1.17 s |
+
+The final lean for PD matches the hand calculation: wind / (mu_c x Kp - mu_a) = 3 / 76 = 0.0395 rad = 2.26 deg.
+
+Short gust (6 per s^2 for 0.3 s): peak tilt 4.13 / 3.49 / 3.96 / 3.69 deg; time back within 0.05 deg 1.06 / 0.99 / 2.82 / 2.11 s. After the gust ends, the integral term has to unwind, so PID is slower than PD and swings the other way (about 3.4 deg for Ki=3).
+
+Cost of the integral term: overshoot from a 1 degree start is 4.0 % (PD), 22.9 % (Ki=1), 49.5 % (Ki=3) with a perfect servo, and 16.7 %, 39.3 %, 79.5 % with a 50 ms servo lag.
